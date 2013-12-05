@@ -1,8 +1,4 @@
 class Flight < ActiveRecord::Base
-  attr_accessible :airline, :arrival_airport_id, :arrival_time, :departure_airport_id, :departure_time, :flight_no,
-                  :price, :number_of_stops, :is_first_flight, :second_flight_destination, :second_flight_no,
-                  :original_price, :origin_code, :shortcut, :pure_date, :cheapest_price, :epic, :month, :new
-
   belongs_to  :departure_airport,
               :class_name => Airport,
               :foreign_key => 'departure_airport_id'

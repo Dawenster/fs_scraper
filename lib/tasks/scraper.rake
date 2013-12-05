@@ -171,6 +171,9 @@ task :scrape => :environment do
         puts "No shortcuts found - deleting all flights on this itinerary..."
         all_flights.map { |flight| flight.destroy }
       end
+
+      # Send shortcut flights to API
+      
     end
   end
 
