@@ -15,7 +15,8 @@ task :scrape => :environment do
     origin_code = file.split('/').last[0..2]
     date_array = []
 
-    num_days = (1..90).to_a
+    # num_days = (1..90).to_a
+    num_days = [1]
 
     num_days.each do |num|
       date_array << (Time.now + num.days).strftime('%m/%d/%Y')
@@ -166,14 +167,19 @@ task :scrape => :environment do
           end
         end
 
+        # Send shortcut flights to API
+        params = {
+          :password => ENV['POST_PASSWORD'],
+          :flights => flights_to_json(shortcuts)
+        }
+
+        RestClient.post 'http://fs-yvr-api.herokuapp.com/flights', params: params
+
         puts "#{origin_code} #{date} complete."
       else
         puts "No shortcuts found - deleting all flights on this itinerary..."
         all_flights.map { |flight| flight.destroy }
       end
-
-      # Send shortcut flights to API
-      
     end
   end
 
@@ -193,4 +199,12 @@ task :scrape => :environment do
   puts "Flights: #{flight_count}"
   puts "Shortcuts: #{Flight.count}"
   puts "Flights scraped per second: #{(flight_count / (Time.now - start_time)).round(2)}"
+end
+
+def flights_to_json(flights)
+  json_flights = []
+  flights.each do |flight|
+    json_flights << flight.to_json
+  end
+  return json_flights
 end
