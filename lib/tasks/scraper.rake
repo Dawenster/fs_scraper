@@ -11,8 +11,10 @@ task :scrape => :environment do
 
   Flight.all.each { |flight| flight.update_attributes(:new => false) }
 
-  Dir[Rails.root.join('db/routes/*.csv')].each do |file|
-    origin_code = file.split('/').last[0..2]
+  combine_csvs
+
+  Dir[Rails.root.join('db/final/*.csv')].each do |file|
+    origin_code = "YVR"
     date_array = []
 
     # num_days = (1..90).to_a
@@ -170,10 +172,11 @@ task :scrape => :environment do
         # Send shortcut flights to API
         params = {
           :password => ENV['POST_PASSWORD'],
+          :date => date,
           :flights => flights_to_json(shortcuts)
         }
 
-        RestClient.post 'http://fs-yvr-api.herokuapp.com/flights', params
+        RestClient.post "http://fs-#{origin_code.downcase}-api.herokuapp.com/flights", params
 
         puts "#{origin_code} #{date} complete."
       else
@@ -187,6 +190,7 @@ task :scrape => :environment do
   puts "Destroying all routes..."
 
   Route.destroy_all
+  File.delete("db/final.csv") if File.exist?("db/final.csv")
 
   puts "*" * 50
   puts "Destroying remaining old flights..."
@@ -207,4 +211,18 @@ def flights_to_json(flights)
     json_flights << { i => flight.as_json }
   end
   return json_flights
+end
+
+def combine_csvs
+  routes = []
+  Dir[Rails.root.join('db/routes/*.csv')].each do |file|
+    CSV.foreach(file) do |route|
+      routes << [route[0],route[1]]
+    end
+  end
+  CSV.open("db/final/final.csv", "wb") do |csv|
+    routes.uniq.each do |route|
+      csv << route
+    end
+  end
 end
