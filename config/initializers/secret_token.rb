@@ -9,4 +9,4 @@
 
 # Make sure your secret_key_base is kept private
 # if you're sharing your code publicly.
-FsYvrScraper::Application.config.secret_key_base = '80c4656f5e39b32a2862930100fc84ac095bf0537bd0a7cb7626e85213eebd59fe4767479255e5a82b579f167493923a06022827b510e1048acecfe971d0c2e9'
+FsYyzScraper::Application.config.secret_key_base = '80c4656f5e39b32a2862930100fc84ac095bf0537bd0a7cb7626e85213eebd59fe4767479255e5a82b579f167493923a06022827b510e1048acecfe971d0c2e9'

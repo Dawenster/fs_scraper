@@ -3,4 +3,4 @@
 
 require File.expand_path('../config/application', __FILE__)
 
-FsYvrScraper::Application.load_tasks
+FsYyzScraper::Application.load_tasks
