@@ -190,7 +190,7 @@ task :scrape => :environment do
   puts "Destroying all routes..."
 
   Route.destroy_all
-  File.delete("db/final.csv") if File.exist?("db/final.csv")
+  File.delete("db/final/final.csv") if File.exist?("db/final/final.csv")
 
   puts "*" * 50
   puts "Destroying remaining old flights..."
