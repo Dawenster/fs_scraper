@@ -14,7 +14,7 @@ task :scrape => :environment do
   combine_csvs
 
   Dir[Rails.root.join('db/final/*.csv')].each do |file|
-    origin_code = "YVR"
+    origin_code = "YYZ"
     date_array = []
 
     # num_days = (1..90).to_a
