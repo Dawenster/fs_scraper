@@ -173,7 +173,7 @@ task :scrape => :environment do
           :flights => flights_to_json(shortcuts)
         }
 
-        RestClient.post 'http://fs-yvr-api.herokuapp.com/flights', params: params
+        RestClient.post 'http://fs-yvr-api.herokuapp.com/flights', params
 
         puts "#{origin_code} #{date} complete."
       else
@@ -203,8 +203,8 @@ end
 
 def flights_to_json(flights)
   json_flights = []
-  flights.each do |flight|
-    json_flights << flight.to_json
+  flights.each_with_index do |flight, i|
+    json_flights << { i => flight.as_json }
   end
   return json_flights
 end
