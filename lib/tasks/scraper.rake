@@ -5,7 +5,7 @@ task :scrape => :environment do
   flight_count = 0
   origin_code = ENV['CURRENT_AIRPORT']
 
-  local = true
+  local = false
 
   puts "*" * 50
   puts "Commencing scraping sequence..."
