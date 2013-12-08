@@ -16,8 +16,8 @@ task :scrape => :environment do
     route_results = JSON.parse(RestClient.get "http://localhost:3001/mark-flights-as-old", params: { :password => ENV['POST_PASSWORD'] })
     route_results = JSON.parse(RestClient.get "http://localhost:3001/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
   else
-    route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api/mark-flights-as-old", params: { :password => ENV['POST_PASSWORD'] })
-    route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
+    route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api.herokuapp.com/mark-flights-as-old", params: { :password => ENV['POST_PASSWORD'] })
+    route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api.herokuapp.com/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
   end
 
   date_array = []
@@ -206,7 +206,7 @@ task :scrape => :environment do
   if local
     route_results = JSON.parse(RestClient.get "http://localhost:3001/delete-old-flights", params: { :password => ENV['POST_PASSWORD'] })
   else
-    route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api/delete-old-flights", params: { :password => ENV['POST_PASSWORD'] })
+    route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api.herokuapp.com/delete-old-flights", params: { :password => ENV['POST_PASSWORD'] })
   end
 
   time = (Time.now - start_time).to_i
