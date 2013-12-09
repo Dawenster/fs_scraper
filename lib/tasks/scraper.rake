@@ -22,8 +22,8 @@ task :scrape => :environment do
 
   date_array = []
 
-  # num_days = (1..90).to_a
-  num_days = [3, 5]
+  num_days = (1..90).to_a
+  # num_days = [3, 5]
 
   num_days.each do |num|
     date_array << (Time.now + num.days).strftime('%m/%d/%Y')
