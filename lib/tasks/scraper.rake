@@ -17,7 +17,7 @@ task :scrape => :environment do
     route_results = JSON.parse(RestClient.get "http://localhost:3000/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
   else
     route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api.herokuapp.com/mark-flights-as-old", params: { :password => ENV['POST_PASSWORD'] })
-    route_results = JSON.parse(RestClient.get "http://flyshortcut.com/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
+    route_results = JSON.parse(RestClient.get "http://www.flyshortcut.com/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
   end
 
   date_array = []
