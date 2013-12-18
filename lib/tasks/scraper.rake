@@ -14,10 +14,10 @@ task :scrape => :environment do
   Flight.all.each { |flight| flight.update_attributes(:new => false) }
   if local
     route_results = JSON.parse(RestClient.get "http://localhost:3001/mark-flights-as-old", params: { :password => ENV['POST_PASSWORD'] })
-    route_results = JSON.parse(RestClient.get "http://localhost:3001/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
+    route_results = JSON.parse(RestClient.get "http://localhost:3002/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
   else
     route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api.herokuapp.com/mark-flights-as-old", params: { :password => ENV['POST_PASSWORD'] })
-    route_results = JSON.parse(RestClient.get "http://fs-#{origin_code.downcase}-api.herokuapp.com/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
+    route_results = JSON.parse(RestClient.get "http://fs-route-generator.herokuapp.com/routes-to-scrape", params: { :code => origin_code, :password => ENV['POST_PASSWORD'] })
   end
 
   date_array = []
