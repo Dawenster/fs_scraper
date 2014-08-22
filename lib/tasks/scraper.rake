@@ -34,7 +34,7 @@ task :scrape => :environment do
 
   date_array.each do |date|
     non_stop_flights = []
-    incomplete_flights = []
+    potential_shortcuts = []
 
     Flight.where(:origin_code => origin_code, :pure_date => date).destroy_all
 
@@ -51,23 +51,29 @@ task :scrape => :environment do
         puts "#{origin}-#{destination}-#{date}"
         puts "*" * 50
 
-        # jsessionid = "ACEE3FCA20509BA3931D4E79C822E310.pwbap099a"
-        search_result = JSON.parse(RestClient.get 'http://travel.travelocity.com/flights/FlightsItineraryService.do', params: { jsessionid: '', flightType: 'oneway', dateTypeSelect: 'EXACT_DATES', leavingDate: date, leavingFrom: origin, goingTo: destination, dateLeavingTime: 1200, originalLeavingTime: 'Anytime', adults: 1, seniors: 0, children: 0, paxCount: 1, classOfService: 'ECONOMY', fareType: 'all', membershipLevel: 'NO_VALUE' })
-        itins = search_result["results"]
+        result_form = Nokogiri::HTML(RestClient.get "http://www.travelocity.com/Flights-Search?trip=oneway&leg1=from:#{origin},to:#{destination},departure:#{date}TANYT&passengers=children:0,adults:1,seniors:0,infantinlap:Y&mode=search")
+        url = result_form.css("#flightResultForm")[0]["action"]
+        url.gsub!("/Flights-Search-RoundTrip?", "")
+        search_result = JSON.parse(RestClient.get "http://www.travelocity.com/Flight-Search-Outbound?" + url)
+
+        itins = search_result["searchResultsModel"]["offers"]
 
         itins.each do |itin|
           begin
-            if itin["numberOfStops"] == 0
+            segment = itin["legs"].first["timeline"].first
+            formatted_departure_time = segment["departureTime"]["time"] + "m"
+            formatted_arrival_time = segment["arrivalTime"]["time"] + "m"
+
+            if itin["legs"].first["stops"] == 0
               created_flight = Flight.create! do |fl|
                 fl.departure_airport_id = origin_airport_id
                 fl.arrival_airport_id = destination_airport_id
-                fl.departure_time = DateTime.strptime(formatted_date + '-' + itin["departureTimeDisplay"], '%Y-%m-%d-%I:%M %p')
-                fl.month = fl.departure_time.strftime("%B")
-                fl.arrival_time = DateTime.strptime(formatted_date + '-' + itin["arrivalTimeDisplay"], '%Y-%m-%d-%I:%M %p')
+                fl.departure_time = DateTime.strptime(formatted_date + '-' + formatted_departure_time, '%Y-%m-%d-%I:%M%p')
+                fl.arrival_time = DateTime.strptime(formatted_date + '-' + formatted_arrival_time, '%Y-%m-%d-%I:%M%p')
                 fl.arrival_time = fl.arrival_time + 1.day if fl.arrival_time < fl.departure_time
-                fl.airline = itin["airline"]
-                fl.flight_no = itin["header"][0]["flightNumber"]
-                fl.price = (itin['totalFare'].to_f * 100).to_i
+                fl.airline = segment["carrier"]["airlineName"]
+                fl.flight_no = segment["carrier"]["flightNumber"]
+                fl.price = (itin["legs"].first["price"]["totalPriceAsDecimal"] * 100).to_i
                 fl.number_of_stops = 0
                 fl.is_first_flight = true
                 fl.pure_date = date
@@ -76,28 +82,31 @@ task :scrape => :environment do
               non_stop_flights << created_flight
               cheapest_price = created_flight.price if (cheapest_price == nil || created_flight.price < cheapest_price)
 
-              puts "Scraped Non-stop #{itin["airline"]} #{itin["header"][0]["flightNumber"]}"
+              puts "Scraped Non-stop #{segment["carrier"]["airlineName"]} #{segment["carrier"]["flightNumber"]}"
               flight_count += 1
 
-            elsif itin["numberOfStops"] == 1 && itin["header"].count == 2
+            elsif itin["legs"].first["stops"] == 1
               flight = Flight.create! do |fl|
                 fl.departure_airport_id = origin_airport_id
-                fl.departure_time = DateTime.strptime(formatted_date + '-' + itin['departureTimeDisplay'], '%Y-%m-%d-%I:%M %p')
-                fl.month = fl.departure_time.strftime("%B")
-                fl.airline = itin['header'][0]['airline']
-                fl.flight_no = itin['header'][0]['flightNumber']
-                fl.price = (itin['totalFare'].to_f * 100).to_i
+                fl.arrival_airport_id = Airport.find_by_code(segment["arrivalAirport"]["code"]).id
+                fl.departure_time = DateTime.strptime(formatted_date + '-' + formatted_departure_time, '%Y-%m-%d-%I:%M%p')
+                fl.arrival_time = DateTime.strptime(formatted_date + '-' + formatted_arrival_time, '%Y-%m-%d-%I:%M%p')
+                fl.arrival_time = fl.arrival_time + 1.day if fl.arrival_time < fl.departure_time
+                fl.airline = segment["carrier"]["airlineName"]
+                fl.flight_no = segment["carrier"]["flightNumber"]
+                fl.price = (itin["legs"].first["price"]["totalPriceAsDecimal"] * 100).to_i
                 fl.number_of_stops = 1
                 fl.is_first_flight = true
                 fl.pure_date = date
+
                 fl.second_flight_destination = destination_airport_id
-                fl.second_flight_no = itin['header'][1]['flightNumber']
+                # fl.second_flight_no = itin['header'][1]['flightNumber']
               end
 
-              incomplete_flights << flight
+              potential_shortcuts << flight
               cheapest_price = flight.price if (cheapest_price == nil || flight.price < cheapest_price)
 
-              puts "Scraped One-stop #{itin['header'][0]['airline']} #{itin['header'][0]['flightNumber']} and #{itin['header'][1]['flightNumber']}"
+              puts "Scraped One-stop #{segment["carrier"]["airlineName"]} #{segment["carrier"]["flightNumber"]}"
               flight_count += 1
             end
           rescue
@@ -115,28 +124,11 @@ task :scrape => :environment do
       end
     end
 
-    puts "*" * 50
-    puts "Filling in one-stop flight info..."
-
-    potential_shortcuts = []
-    orphaned_flights = []
     shortcuts = []
     almost_shortcuts = []
     non_shortcuts = []
 
-    incomplete_flights.each do |flight|
-      match = non_stop_flights.select { |ns_flight| ns_flight.flight_no == flight.flight_no && ns_flight.airline == flight.airline && ns_flight.pure_date == flight.pure_date }[0]
-      if match
-        flight.update_attributes(:arrival_airport_id => match.arrival_airport_id, :arrival_time => match.arrival_time)
-        potential_shortcuts << flight
-      else
-        orphaned_flights << flight
-      end
-    end
-
-    puts "Deleting orphaned one-stop flights..."
-    orphaned_flights.map { |flight| flight.destroy }
-
+    puts "*" * 50
     puts "Commencing shortcut calculations..."
 
     all_flights = non_stop_flights + potential_shortcuts
