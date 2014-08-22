@@ -22,7 +22,7 @@ task :scrape => :environment do
 
   date_array = []
 
-  num_days = (1..90).to_a
+  num_days = (1..75).to_a
   # num_days = [3, 5]
 
   num_days.each do |num|
@@ -79,12 +79,16 @@ task :scrape => :environment do
                 fl.pure_date = date
               end
 
-              non_stop_flights << created_flight
-              cheapest_price = created_flight.price if (cheapest_price == nil || created_flight.price < cheapest_price)
+              if created_flight.price == 0
+                puts "Zero price!"
+                raise "Price is 0"
+              else
+                non_stop_flights << created_flight
+                cheapest_price = created_flight.price if (cheapest_price == nil || created_flight.price < cheapest_price)
 
-              puts "Scraped Non-stop #{segment["carrier"]["airlineName"]} #{segment["carrier"]["flightNumber"]}"
-              flight_count += 1
-
+                puts "Scraped Non-stop #{segment["carrier"]["airlineName"]} #{segment["carrier"]["flightNumber"]}"
+                flight_count += 1
+              end
             elsif itin["legs"].first["stops"] == 1
               flight = Flight.create! do |fl|
                 fl.departure_airport_id = origin_airport_id
@@ -103,11 +107,16 @@ task :scrape => :environment do
                 # fl.second_flight_no = itin['header'][1]['flightNumber']
               end
 
-              potential_shortcuts << flight
-              cheapest_price = flight.price if (cheapest_price == nil || flight.price < cheapest_price)
+              if flight.price == 0
+                puts "Zero price!"
+                raise "Price is 0"
+              else
+                potential_shortcuts << flight
+                cheapest_price = flight.price if (cheapest_price == nil || flight.price < cheapest_price)
 
-              puts "Scraped One-stop #{segment["carrier"]["airlineName"]} #{segment["carrier"]["flightNumber"]}"
-              flight_count += 1
+                puts "Scraped One-stop #{segment["carrier"]["airlineName"]} #{segment["carrier"]["flightNumber"]}"
+                flight_count += 1
+              end
             end
           rescue
             created_flight.destroy if created_flight
