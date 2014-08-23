@@ -169,7 +169,9 @@ task :scrape => :environment do
       shortcuts.uniq! { |flight| flight.flight_no + flight.airline + flight.pure_date }
       shortcuts.each do |flight|
         route = Route.where(:origin_airport_id => flight.departure_airport_id, :destination_airport_id => flight.arrival_airport_id, :date => flight.pure_date)[0]
-        if (route.cheapest_price - flight.price) > 2000
+        if route.nil?
+          flight.destroy
+        elsif (route.cheapest_price - flight.price) > 2000
           flight.update_attributes(:cheapest_price => route.cheapest_price, :new => true, :epic => true)
         else
           flight.update_attributes(:cheapest_price => route.cheapest_price, :new => true)
